@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import logger from '../../config/logger';
-import * as committeeService from '../services/committeeService';
+import * as committeeService from '../services/committee-service';
 import { AuthRequest } from '../middlewares/authMiddleware';
 
 const getFriendlyPollErrorMessage = (error: unknown) => {
@@ -268,6 +268,159 @@ export const getCommitteePortalInbox = async (req: AuthRequest, res: Response, n
     return res.json(result);
   } catch (error) {
     logger.error('Error getCommitteePortalInbox:', error);
+    return next(error);
+  }
+};
+
+export const getCommitteePortalMeetings = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'User not authenticated' });
+    }
+    const requestUrl = `${req.protocol}://${req.get('host')}${req.baseUrl}${req.path}`;
+    const page = req.query.page as string | undefined;
+    const size = req.query.size as string | undefined;
+    const search = req.query.search as string | undefined;
+    const result = await committeeService.getCommitteePortalMeetings({
+      userId,
+      page,
+      size,
+      search,
+      requestUrl,
+    });
+    return res.json(result);
+  } catch (error) {
+    logger.error('Error getCommitteePortalMeetings:', error);
+    return next(error);
+  }
+};
+
+export const getCommitteePortalMeetingById = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'User not authenticated' });
+    }
+    const { id } = req.params;
+    const result = await committeeService.getCommitteePortalMeetingById({ userId, id });
+    if (!result.success) return res.status(404).json(result);
+    return res.json(result);
+  } catch (error) {
+    logger.error('Error getCommitteePortalMeetingById:', error);
+    return next(error);
+  }
+};
+
+export const createCommitteePortalMeeting = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'User not authenticated' });
+    }
+    const { title, meeting_date, description } = req.body as {
+      title?: string;
+      meeting_date?: string | null;
+      description?: string | null;
+    };
+    if (!title || String(title).trim() === '') {
+      return res.status(400).json({ success: false, message: 'Title is required.' });
+    }
+    const result = await committeeService.createCommitteePortalMeeting({
+      userId,
+      title: String(title),
+      meeting_date: meeting_date ?? null,
+      description: description ?? null,
+    });
+    if (!result.success) return res.status(403).json(result);
+    return res.status(201).json(result);
+  } catch (error) {
+    logger.error('Error createCommitteePortalMeeting:', error);
+    return next(error);
+  }
+};
+
+export const updateCommitteePortalMeeting = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'User not authenticated' });
+    }
+    const { id } = req.params;
+    const { title, meeting_date, description } = req.body as {
+      title?: string;
+      meeting_date?: string | null;
+      description?: string | null;
+    };
+    if (!title || String(title).trim() === '') {
+      return res.status(400).json({ success: false, message: 'Title is required.' });
+    }
+    const result = await committeeService.updateCommitteePortalMeeting({
+      userId,
+      id,
+      title: String(title),
+      meeting_date: meeting_date ?? null,
+      description: description ?? null,
+    });
+    if (!result.success) return res.status(403).json(result);
+    return res.json(result);
+  } catch (error) {
+    logger.error('Error updateCommitteePortalMeeting:', error);
+    return next(error);
+  }
+};
+
+export const deleteCommitteePortalMeeting = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'User not authenticated' });
+    }
+    const { id } = req.params;
+    const result = await committeeService.deleteCommitteePortalMeeting({ userId, id });
+    if (!result.success) return res.status(403).json(result);
+    return res.json(result);
+  } catch (error) {
+    logger.error('Error deleteCommitteePortalMeeting:', error);
+    return next(error);
+  }
+};
+
+export const getCommitteePortalMeetingAttendance = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'User not authenticated' });
+    }
+    const { id } = req.params;
+    const result = await committeeService.getCommitteePortalMeetingAttendance({ userId, id });
+    if (!result.success) return res.status(404).json(result);
+    return res.json(result);
+  } catch (error) {
+    logger.error('Error getCommitteePortalMeetingAttendance:', error);
+    return next(error);
+  }
+};
+
+export const saveCommitteePortalMeetingAttendance = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'User not authenticated' });
+    }
+    const { id } = req.params;
+    const { attendance } = req.body as {
+      attendance?: { user_id: number; status: 'present' | 'absent' | 'excused'; note?: string }[];
+    };
+    const result = await committeeService.saveCommitteePortalMeetingAttendance({
+      userId,
+      id,
+      attendance: Array.isArray(attendance) ? attendance : [],
+    });
+    if (!result.success) return res.status(403).json(result);
+    return res.json(result);
+  } catch (error) {
+    logger.error('Error saveCommitteePortalMeetingAttendance:', error);
     return next(error);
   }
 };
